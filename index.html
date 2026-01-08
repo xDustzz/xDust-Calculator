@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xDust Calc</title>
+    <link rel="icon" type="image/jpg" href="favicon.jpg">
+    <style>
+        /* Reset & Base Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
+            overflow: hidden;
+        }
+
+        /* Tombol Expand Fixed di Layar */
+        .expand-btn {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 12px; 
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            z-index: 100;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            min-width: fit-content;
+            white-space: nowrap;
+        }
+
+        .expand-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: #a5b4fc;
+            stroke-width: 2;
+            transition: transform 0.3s ease;
+        }
+
+        .expand-btn:hover {
+            background: rgba(139, 92, 246, 0.25);
+            border-color: rgba(139, 92, 246, 0.6);
+            box-shadow: 0 0 25px rgba(139, 92, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Glassmorphism Container */
+        .calculator {
+            position: relative;
+            width: 350px;
+            padding: 30px 20px;
+            border-radius: 45px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: width 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
+        }
+
+        .calculator.expanded {
+            width: 650px;
+        }
+
+        /* Logo Brand */
+        .brand {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 20;
+        }
+
+        .logo-box {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #7c3aed, #2563eb);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.5);
+        }
+
+        .logo-box svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+
+        .brand-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            background: linear-gradient(to right, #ffffff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Layar Display */
+        .screen-container {
+            width: 100%;
+            height: 140px;
+            margin-top: 30px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            padding: 10px 15px;
+            position: relative;
+        }
+
+        .history {
+            font-size: 1.1rem;
+            color: rgba(165, 180, 252, 0.4);
+            min-height: 25px;
+            margin-bottom: 5px;
+            text-align: right;
+            width: 100%;
+        }
+
+        .digit-container {
+            font-size: 3.2rem;
+            font-weight: 200;
+            color: #ffffff;
+            display: flex;
+            align-items: baseline;
+            white-space: nowrap;
+        }
+
+        .input-area {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            width: 100%;
+            height: 70px;
+        }
+
+        /* Cursor */
+        .custom-cursor {
+            position: absolute;
+            width: 2.5px;
+            height: 48px;
+            background-color: #ffffff;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+            border-radius: 4px;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0;
+            transition: transform 0.3s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.3s;
+            right: 0;
+        }
+
+        .custom-cursor.active { opacity: 1; animation: softBlink 1.5s ease-in-out infinite; }
+        @keyframes softBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* Tombol - Tombol */
+        .main-layout { display: flex; gap: 20px; width: 100%; }
+        .buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; flex: 1.5; justify-items: center; }
+        .scientific-panel { display: none; grid-template-columns: repeat(3, 1fr); gap: 12px; flex: 1; }
+        .calculator.expanded .scientific-panel { display: grid; }
+
+        button {
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 1.4rem;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.03);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* --- EFEK BERSINAR HALUS SAAT MOUSE LEWAT (HOVER) --- */
+        button:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+        }
+
+        button.operator:hover {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+            color: #ffffff;
+        }
+
+        button.action-red:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.4);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+        }
+
+        button.equal:hover {
+            box-shadow: 0 0 25px rgba(37, 99, 235, 0.6);
+            transform: scale(1.08);
+        }
+
+        /* Efek saat ditekan tetep ada */
+        button:active { transform: scale(0.92); transition: 0.1s; }
+
+        .scientific-panel button { width: 55px; height: 55px; font-size: 1.1rem; border-radius: 12px; }
+        button.operator { color: #a5b4fc; background: rgba(139, 92, 246, 0.1); }
+        button.equal { background: linear-gradient(135deg, #7c3aed, #2563eb); }
+        button.action-red { color: #f87171; }
+
+        .backspace-svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; }
+    </style>
+</head>
+<body>
+
+    <button class="expand-btn" id="expandBtn" onclick="toggleExpand()">
+        <svg id="expandIcon" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+        <span id="expandText">Expand Mode</span>
+    </button>
+
+    <div class="calculator" id="calcBody">
+        <div class="brand">
+            <div class="logo-box">
+                <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
+            </div>
+            <span class="brand-name">xDust Calc</span>
+        </div>
+
+        <div class="screen-container">
+            <div class="history" id="history"></div>
+            <div class="input-area" id="inputArea">
+                <div class="digit-container" id="digitContainer"></div>
+                <div class="custom-cursor" id="cursor"></div>
+            </div>
+        </div>
+        
+        <div class="main-layout">
+            <div class="scientific-panel">
+                <button class="operator" onclick="handleSci('sin')">sin</button>
+                <button class="operator" onclick="handleSci('cos')">cos</button>
+                <button class="operator" onclick="handleSci('tan')">tan</button>
+                <button class="operator" onclick="handleSci('log')">log</button>
+                <button class="operator" onclick="handleButton('(')">(</button>
+                <button class="operator" onclick="handleButton(')')">)</button>
+                <button class="operator" onclick="handleSci('sqrt')">√</button>
+                <button class="operator" onclick="handleSci('pow')">xʸ</button>
+                <button class="operator" onclick="handleSci('pi')">π</button>
+            </div>
+
+            <div class="buttons">
+                <button class="action-red" onclick="handleClear()">C</button>
+                <button class="action-red" onclick="handleBackspace()">
+                    <svg class="backspace-svg" viewBox="0 0 24 24">
+                        <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM18 9l-6 6M12 9l6 6" />
+                    </svg>
+                </button>
+                <button class="operator" onclick="handleOperator('%')">%</button>
+                <button class="operator" onclick="handleOperator('/')">÷</button>
+                
+                <button onclick="handleButton('7')">7</button>
+                <button onclick="handleButton('8')">8</button>
+                <button onclick="handleButton('9')">9</button>
+                <button class="operator" onclick="handleOperator('*')">×</button>
+                
+                <button onclick="handleButton('4')">4</button>
+                <button onclick="handleButton('5')">5</button>
+                <button onclick="handleButton('6')">6</button>
+                <button class="operator" onclick="handleOperator('-')">−</button>
+                
+                <button onclick="handleButton('1')">1</button>
+                <button onclick="handleButton('2')">2</button>
+                <button onclick="handleButton('3')">3</button>
+                <button class="operator" onclick="handleOperator('+')">+</button>
+                
+                <button onclick="handleButton('00')">00</button>
+                <button onclick="handleButton('0')">0</button>
+                <button onclick="handleButton('.')">.</button>
+                <button class="equal" onclick="handleEqual()">=</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Logika fungsi kalkulator tetap sama agar tidak merusak sistem
+        let currentInput = "0";
+        let previousInput = "";
+        let operator = null;
+        let shouldResetScreen = false;
+        let cursorPos = 1;
+        let lastX = 0;
+        let isExpanded = false;
+
+        const digitContainer = document.getElementById('digitContainer');
+        const cursorEl = document.getElementById('cursor');
+        const historyEl = document.getElementById('history');
+        const inputArea = document.getElementById('inputArea');
+        const calcBody = document.getElementById('calcBody');
+        const expandText = document.getElementById('expandText');
+        const expandIcon = document.getElementById('expandIcon');
+
+        function toggleExpand() {
+            isExpanded = !isExpanded;
+            calcBody.classList.toggle('expanded');
+            expandText.innerText = isExpanded ? "Shrink Mode" : "Expand Mode";
+            if (isExpanded) {
+                expandIcon.innerHTML = '<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" />';
+            } else {
+                expandIcon.innerHTML = '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />';
+            }
+            setTimeout(updateCursorVisual, 500);
+        }
+
+        function formatVal(val) {
+            if (val === "Error") return "Error";
+            if (/[a-z\(]/.test(val)) return val;
+            let n = parseFloat(val);
+            if (isNaN(n)) return val;
+            if (Math.abs(n) > 999999999) return n.toExponential(2).replace("e", "E");
+            let s = Number(n.toFixed(3)).toString();
+            if (val.endsWith('.') && !s.includes('.')) return s + '.';
+            return s;
+        }
+
+        function render() {
+            digitContainer.innerHTML = '';
+            const displayStr = formatVal(currentInput);
+            if (currentInput === "Error") {
+                digitContainer.classList.add('error-state');
+                cursorEl.style.display = 'none';
+            } else {
+                digitContainer.classList.remove('error-state');
+                cursorEl.style.display = 'block';
+            }
+            displayStr.split('').forEach((char, i) => {
+                const span = document.createElement('span');
+                span.className = 'digit';
+                span.textContent = char;
+                span.onclick = (e) => { e.stopPropagation(); setCursorPos(i + 1); };
+                digitContainer.appendChild(span);
+            });
+            inputArea.onclick = (e) => {
+                if (currentInput === "Error") return;
+                const rect = digitContainer.getBoundingClientRect();
+                if (e.clientX < rect.left + 5) setCursorPos(0);
+                else setCursorPos(displayStr.length);
+            };
+            updateCursorVisual();
+        }
+
+        function setCursorPos(pos) {
+            const displayStr = formatVal(currentInput);
+            cursorPos = Math.max(0, Math.min(displayStr.length, pos));
+            updateCursorVisual();
+        }
+
+        function updateCursorVisual() {
+            if (currentInput === "Error") return;
+            const digits = digitContainer.children;
+            let offset = 0;
+            for (let i = 0; i < cursorPos; i++) {
+                if (digits[i]) offset += digits[i].getBoundingClientRect().width;
+            }
+            const containerRect = digitContainer.getBoundingClientRect();
+            const inputRect = inputArea.getBoundingClientRect();
+            const targetX = (containerRect.left - inputRect.right) + offset;
+            cursorEl.style.setProperty('--target-x', `${targetX}px`);
+            if (Math.abs(targetX - lastX) > 2) {
+                cursorEl.classList.add('moving');
+                clearTimeout(window.moveTimeout);
+                window.moveTimeout = setTimeout(() => cursorEl.classList.remove('moving'), 300);
+            }
+            cursorEl.style.transform = `translateX(${targetX}px)`;
+            cursorEl.classList.add('active');
+            lastX = targetX;
+        }
+
+        function handleButton(val) {
+            if (currentInput === "Error" || shouldResetScreen) {
+                currentInput = (val === '.') ? "0." : val;
+                shouldResetScreen = false;
+                render();
+                setCursorPos(formatVal(currentInput).length);
+            } else {
+                const str = currentInput;
+                const displayBefore = formatVal(currentInput);
+                const ratio = cursorPos / (displayBefore.length || 1);
+                const insertIdx = Math.round(str.length * ratio);
+                if (val === '.') {
+                    if (!currentInput.includes('.')) currentInput = str.slice(0, insertIdx) + '.' + str.slice(insertIdx);
+                } else {
+                    if (currentInput === "0" && !isNaN(val)) currentInput = val;
+                    else currentInput = str.slice(0, insertIdx) + val + str.slice(insertIdx);
+                }
+                render();
+                setCursorPos(cursorPos + val.length);
+            }
+        }
+
+        function handleSci(type) {
+            if (currentInput === "Error") return;
+            let val = parseFloat(currentInput);
+            let res = 0;
+            switch(type) {
+                case 'sin': res = Math.sin(val * Math.PI / 180); break;
+                case 'cos': res = Math.cos(val * Math.PI / 180); break;
+                case 'tan': res = Math.tan(val * Math.PI / 180); break;
+                case 'log': res = Math.log10(val); break;
+                case 'sqrt': res = Math.sqrt(val); break;
+                case 'pi': res = Math.PI; break;
+                case 'pow': 
+                    previousInput = currentInput;
+                    operator = '^';
+                    historyEl.innerText = `${formatVal(previousInput)} ^`;
+                    shouldResetScreen = true;
+                    return;
+            }
+            currentInput = res.toString();
+            render();
+            setCursorPos(formatVal(currentInput).length);
+        }
+
+        function handleBackspace() {
+            if (currentInput === "Error") { handleClear(); return; }
+            if (currentInput.length > 0) {
+                const displayStr = formatVal(currentInput);
+                const ratio = cursorPos / (displayStr.length || 1);
+                const deleteIdx = Math.round(currentInput.length * ratio);
+                if (deleteIdx > 0) {
+                    currentInput = currentInput.slice(0, deleteIdx - 1) + currentInput.slice(deleteIdx);
+                    render();
+                    setCursorPos(cursorPos - 1);
+                }
+            }
+            if (currentInput === "" || currentInput === "0") {
+                currentInput = "0";
+                render();
+                setCursorPos(1);
+            }
+        }
+
+        function handleClear() {
+            currentInput = "0";
+            previousInput = "";
+            operator = null;
+            shouldResetScreen = false;
+            historyEl.innerText = "";
+            render();
+            setCursorPos(1);
+        }
+
+        function handleOperator(op) {
+            if (currentInput === "Error") return;
+            if (operator !== null && !shouldResetScreen) calculate();
+            previousInput = currentInput;
+            operator = op;
+            const sym = {'+': '+', '-': '−', '*': '×', '/': '÷', '%': '%', '^': '^'}[op] || op;
+            historyEl.innerText = `${formatVal(previousInput)} ${sym}`;
+            shouldResetScreen = true;
+            render();
+        }
+
+        function calculate() {
+            if (operator === null || previousInput === "") return;
+            const p = parseFloat(previousInput);
+            const c = parseFloat(currentInput);
+            let res = 0;
+            switch (operator) {
+                case '+': res = p + c; break;
+                case '-': res = p - c; break;
+                case '*': res = p * c; break;
+                case '/': 
+                    if (c === 0) { currentInput = "Error"; render(); return; }
+                    res = p / c; 
+                    break;
+                case '%': res = p % c; break;
+                case '^': res = Math.pow(p, c); break;
+            }
+            currentInput = res.toString();
+            render();
+            setCursorPos(formatVal(currentInput).length);
+        }
+
+        function handleEqual() {
+            if (operator === null || currentInput === "Error") return;
+            calculate();
+            historyEl.innerText = "";
+            operator = null;
+            previousInput = "";
+            shouldResetScreen = true;
+            render();
+        }
+
+        window.onload = render;
+    </script>
+</body>
+</html>
